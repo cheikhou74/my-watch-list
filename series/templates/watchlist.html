@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ma Watchlist</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .series-item { border-bottom: 1px solid #ccc; padding: 10px; }
+        img { max-width: 100px; float: left; margin-right: 10px; }
+        .clear { clear: both; }
+        .buttons { margin-bottom: 20px; }
+        .buttons button { margin-right: 10px; padding: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Ma liste de séries à voir</h1>
+
+    <div class="buttons">
+        <a href="{% url 'add_netflix' %}"><button>➕ Ajouter 10 séries Netflix</button></a>
+        <a href="{% url 'add_prime' %}"><button>➕ Ajouter 10 séries Amazon Prime</button></a>
+        <a href="{% url 'add_apple' %}"><button>➕ Ajouter 10 séries Apple TV+</button></a>
+        <a href="{% url 'add_action' %}"><button>➕ Ajouter 10 séries d'action</button></a>
+    </div>
+
+    <div>
+        {% for series in series_list %}
+            <div class="series-item">
+                {% if series.poster_path %}
+                    <img src="https://image.tmdb.org/t/p/w200{{ series.poster_path }}" alt="Affiche">
+                {% endif %}
+                <h3>{{ series.name }} <small>({{ series.provider }})</small></h3>
+                <p><strong>Note :</strong> {{ series.vote_average }}/10</p>
+                <p>{{ series.overview|truncatechars:300 }}</p>
+                <p><em>TMDB ID : {{ series.tmdb_id }}</em></p>
+                <div class="clear"></div>
+            </div>
+        {% empty %}
+            <p>Aucune série dans votre watchlist pour le moment. Cliquez sur un bouton ci-dessus pour en ajouter.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
