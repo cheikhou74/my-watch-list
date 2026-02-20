@@ -3,19 +3,30 @@ TMDB_API_KEY = settings.TMDB_API_KEY
 
 from django.shortcuts import render, redirect
 from .models import Series
+
 import ssl
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
 import requests
 requests.packages.urllib3.disable_warnings()
 from django.conf import settings
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
+def list(request):
+    series_list = Series.objects.filter(user=request.user).order_by('-created_at')  
+    return render(request, 'watchlist.html', {'series_list': series_list})
+    
 
 TMDB_API_KEY = settings.TMDB_API_KEY
 TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 
 def watchlist(request):
     """Affiche toutes les séries de la watchlist"""
-    series_list = Series.objects.all().order_by('-created_at')
+    series_list = Series.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'watchlist.html', {'series_list': series_list})
 
 def fetch_and_save_series(provider_name, provider_id, genre_id=None, request=None):
@@ -50,9 +61,10 @@ def fetch_and_save_series(provider_name, provider_id, genre_id=None, request=Non
 
     data = response.json()
     created_count = 0
-    for item in data['results'][:10]:   # on ne prend que les 10 premiers
+    for item in data['results'][:10]:   
         obj, created = Series.objects.get_or_create(
             tmdb_id=item['id'],
+            user=request.user,
             defaults={
                 'name': item['name'],
                 'overview': item.get('overview', ''),
@@ -91,3 +103,28 @@ def add_action(request):
     # Pour les séries d'action, on utilise le genre 10759, sans fournisseur
     fetch_and_save_series('action', None, genre_id=10759, request=request)
     return redirect('watchlist')
+
+# ...existing code...
+def register(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # Connecte l'utilisateur après inscription
+            return redirect("list")  # Redirige vers la page principale
+    else:
+        form = UserCreationForm()
+    return render(request, "series/register.html", {"form": form})
+# ...existing code...
+
+@login_required
+def delete_series(request, series_id):
+    serie = Series.objects.get(id=series_id, user=request.user)
+    serie.delete()
+    return redirect('watchlist')
+
+@login_required
+def watchlist(request):
+    """Affiche toutes les séries de la watchlist"""
+    series_list = Series.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'watchlist.html', {'series_list': series_list})
